@@ -1,22 +1,19 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-// Hash password
-export async function hashPassword(password) {
+export const hashPassword = async (password) => {
   const salt = await bcrypt.genSalt(10);
   return await bcrypt.hash(password, salt);
-}
+};
 
-// Compare password
-export async function comparePassword(password, hash) {
-  return await bcrypt.compare(password, hash);
-}
+export const comparePassword = async (password, hashed) => {
+  return await bcrypt.compare(password, hashed);
+};
 
-// Generate JWT token
-export function generateToken(user) {
+export const generateToken = (user) => {
   return jwt.sign(
-    { userId: user._id },
+    { userId: user._id, isAdmin: user.isAdmin },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
+    { expiresIn: "1d" }
   );
-}
+};
