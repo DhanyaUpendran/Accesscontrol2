@@ -1,10 +1,11 @@
 export const PERMISSIONS = {
-  VIEW_USERS: "view_users",
-  MANAGE_USERS: "manage_users",
-  VIEW_AUDIT_LOGS: "view_audit_logs",
-  VIEW_PROFILE: "view_profile",
-  UPDATE_PROFILE: "update_profile"
+  VIEW_USERS: "VIEW_USERS",
+  MANAGE_USERS: "MANAGE_USERS",
+  MANAGE_ROLES: "MANAGE_ROLES",
+  MANAGE_TEAMS: "MANAGE_TEAMS",
+  VIEW_AUDIT_LOGS: "VIEW_AUDIT_LOGS"
 };
+
 
 export const SCOPES = {
   SELF: "self",     // Only affects own user data
