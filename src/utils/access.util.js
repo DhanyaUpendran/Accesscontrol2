@@ -1,55 +1,67 @@
 import User from "../models/user.js";
+import { SCOPES } from "./permission.js";
 
 /**
  * Returns the **highest valid scope** for a user for a given permission.
  * If user has no permission, returns null.
  */
-export async function hasPermission(user, permissionKey) {
-  if (!user) return null;
+/* ===================== PERMISSION RESOLUTION ===================== */
 
+export const hasPermission = (user, permissionKey) => {
   const now = new Date();
 
-  // Direct permissions
-  const direct = user.directPermissions.find(p =>
-    p.permissionKey.toLowerCase() === permissionKey.toLowerCase() &&
-    (!p.startsAt || p.startsAt <= now) &&
-    (!p.endsAt || p.endsAt >= now)
-  );
-  if (direct) return direct.scope;
+  // 1️⃣ Direct permissions
+  for (const p of user.directPermissions || []) {
+    if (
+      p.permissionKey === permissionKey &&
+      p.startsAt <= now &&
+      (!p.endsAt || p.endsAt >= now)
+    ) {
+      return p.scope;
+    }
+  }
 
-  // Roles
-  for (const roleAssignment of user.roles) {
-    if (roleAssignment.endsAt && roleAssignment.endsAt < now) continue;
 
-    const role = await roleAssignment.roleId.populate("permissions").execPopulate?.() || roleAssignment.roleId;
-    if (!role.permissions) continue;
 
-    const perm = role.permissions.find(p =>
-      p.permissionKey.toLowerCase() === permissionKey.toLowerCase()
-    );
-    if (perm) return perm.scope;
+  // 2️⃣ Role permissions
+  for (const role of user.roles || []) {
+    if (role.startsAt > now || (role.endsAt && role.endsAt < now)) continue;
+
+    for (const perm of role.roleId.permissions || []) {
+      if (perm.permissionKey === permissionKey) {
+        return perm.scope;
+      }
+    }
   }
 
   return null;
-}
+};
 
-/**
- * Enforces scope rules:
- * - self → targetUser must be the user
- * - team → targetUser must be in same team
- * - global → allowed
- */
-export function enforceScope(scope, user, targetUser) {
-  if (!scope || !user || !targetUser) return false;
 
-  switch (scope) {
-    case "self":
-      return user._id.toString() === targetUser._id.toString();
-    case "team":
-      return user.team && targetUser.team && user.team.toString() === targetUser.team.toString();
-    case "global":
-      return true;
-    default:
-      return false;
+  export const resolveBestScope = (scopes = []) => {
+  if (scopes.includes("global")) return "global";
+  if (scopes.includes("team")) return "team";
+  if (scopes.includes("self")) return "self";
+  return null;
+};
+/* ===================== SCOPE ENFORCEMENT ===================== */
+
+export const enforceScope = (scope, actor, target) => {
+  if (!target) return true;
+
+  if (scope === "global") return true;
+
+  if (scope === "team") {
+    return (
+      actor.team &&
+      target.team &&
+      actor.team.toString() === target.team.toString()
+    );
   }
-}
+
+  if (scope === "self") {
+    return actor._id.toString() === target._id.toString();
+  }
+
+  return false;
+};
