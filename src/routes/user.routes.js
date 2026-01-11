@@ -1,58 +1,49 @@
 import express from "express";
-import auth from "../middleware/auth.js";
-import checkAccess from "../middleware/checkAccess.js";
-import { PERMISSIONS } from "../utils/permission.js";
-import User from "../models/user.js";
-
 import {
   getUsers,
+  getProfile,
   updateUser,
-  removeUserFromTeam
-} from "../controllers/user.controller.js";
+  removeUserFromTeam,
+} from "../controller/user.controller.js";
+
+import auth from "../middleware/auth.js";
+import checkAccess from "../middleware/checkAccess.js";
+import User from "../models/user.js";
 
 const router = express.Router();
 
 /**
- * GET USERS
+ * Helper to get target user for scope enforcement
  */
+const getTargetUser = async (req) => {
+  const { userId } = req.params;
+  return await User.findById(userId);
+};
+
+// 🌐 Get all allowed users (scope-aware)
 router.get(
-  "/users",
+  "/",
   auth,
-  checkAccess(PERMISSIONS.VIEW_USERS),
+  checkAccess("VIEW_USERS"),
   getUsers
 );
 
-/**
- * UPDATE USER
- */
+// 👤 Get current logged-in user profile
+router.get("/profile", auth, checkAccess("VIEW_PROFILE"), getProfile);
+
+// ✏️ Update a user (name/email)
 router.put(
-  "/users/:id",
+  "/:userId",
   auth,
-  checkAccess(
-    PERMISSIONS.MANAGE_USERS,
-    async (req) => {
-      const user = await User.findById(req.params.id);
-      req.targetUser = user;
-      return user;
-    }
-  ),
+  checkAccess("UPDATE_PROFILE", getTargetUser),
   updateUser
 );
 
-/**
- * REMOVE USER FROM TEAM
- */
+// 🏷 Remove user from team
 router.delete(
-  "/users/:id/team",
+  "/:userId/team",
   auth,
-  checkAccess(
-    PERMISSIONS.MANAGE_USERS,
-    async (req) => {
-      const user = await User.findById(req.params.id);
-      req.targetUser = user;
-      return user;
-    }
-  ),
+  checkAccess("MANAGE_USERS", getTargetUser),
   removeUserFromTeam
 );
 

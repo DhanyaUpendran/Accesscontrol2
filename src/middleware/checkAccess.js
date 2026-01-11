@@ -1,36 +1,37 @@
-import { hasPermission } from "../utils/permission.js";
-import { resolveBestScope, enforceScope } from "../utils/access.utils.js";
+import { hasPermission, enforceScope } from "../utils/access.util.js";
 
-const checkAccess = (permissions, getTargetUser) => {
-  const permissionList = Array.isArray(permissions)
-    ? permissions
-    : [permissions];
-
+const checkAccess = (permissionKey, getTargetUser) => {
   return async (req, res, next) => {
-    const scopes = [];
+    console.log("🛂 checkAccess called for:", permissionKey);
 
-    for (const perm of permissionList) {
-      const scope = await hasPermission(req.user, perm);
-      if (scope) scopes.push(scope);
-    }
+    const permission = await hasPermission(req.user, permissionKey);
 
-    const finalScope = resolveBestScope(scopes);
-
-    if (!finalScope) {
+    // Permission not found or expired
+    if (!permission) {
+      console.log("🚫 ACCESS DENIED: Permission missing or expired");
       return res.status(403).json({ message: "Permission denied" });
     }
 
-    req.scope = finalScope;
+    const now = new Date();
+    if (permission.startsAt && permission.startsAt > now) {
+      console.log("🚫 ACCESS DENIED: Permission not started yet");
+      return res.status(403).json({ message: "Permission not active yet" });
+    }
+    if (permission.endsAt && permission.endsAt < now) {
+      console.log("🚫 ACCESS DENIED: Permission expired");
+      return res.status(403).json({ message: "Permission expired" });
+    }
+
+    req.scope = permission.scope;
 
     if (getTargetUser) {
-      const target = await getTargetUser(req);
-      if (!target) {
-        return res.status(404).json({ message: "Target not found" });
-      }
+      const targetUser = await getTargetUser(req);
 
-      if (!enforceScope(finalScope, req.user, target)) {
+      if (!enforceScope(permission.scope, req.user, targetUser)) {
         return res.status(403).json({ message: "Scope restriction" });
       }
+
+      req.targetUser = targetUser;
     }
 
     next();

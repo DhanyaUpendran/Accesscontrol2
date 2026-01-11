@@ -12,12 +12,9 @@ export const getUsers = async (req, res) => {
 
     if (scope === "self") {
       query._id = user._id;
-    }
-
-    if (scope === "team") {
+    } else if (scope === "team") {
       query.team = user.team;
     }
-
     // global → no filter
 
     const users = await User.find(query)
@@ -26,7 +23,24 @@ export const getUsers = async (req, res) => {
 
     res.json(users);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to fetch users" });
+  }
+};
+
+/**
+ * GET CURRENT USER PROFILE
+ */
+export const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id)
+      .select("-passwordHash")
+      .populate("team", "name");
+
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to fetch profile" });
   }
 };
 
@@ -38,6 +52,15 @@ export const updateUser = async (req, res) => {
     const { name, email } = req.body;
     const targetUser = req.targetUser;
 
+    const permission = req.user.permissions.find(
+      (p) => p.key === "UPDATE_PROFILE"
+    );
+
+    const now = new Date();
+    if (!permission || (permission.endsAt && permission.endsAt < now)) {
+      return res.status(403).json({ message: "Permission expired or denied" });
+    }
+
     if (name) targetUser.name = name;
     if (email) targetUser.email = email;
 
@@ -45,6 +68,7 @@ export const updateUser = async (req, res) => {
 
     res.json({ message: "User updated successfully" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to update user" });
   }
 };
@@ -61,6 +85,7 @@ export const removeUserFromTeam = async (req, res) => {
 
     res.json({ message: "User removed from team" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to remove user from team" });
   }
 };
