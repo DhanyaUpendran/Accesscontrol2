@@ -4,7 +4,8 @@ export const PERMISSIONS = {
   MANAGE_USERS: "manage_users",
   MANAGE_ROLES: "manage_roles",
   MANAGE_TEAMS: "manage_teams",
-  VIEW_AUDIT_LOGS: "view_audit_logs"
+  VIEW_AUDIT_LOGS: "view_audit_logs",
+  MANAGE_PROFILE:"manage_profile"
 };
 
 export const SCOPES = {

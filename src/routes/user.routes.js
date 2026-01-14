@@ -23,7 +23,7 @@ router.get("/userdetails", auth, access(PERMISSIONS.VIEW_USERS), getUsers);
 router.put(
   "/users/:userId",
   auth,
- access(PERMISSIONS.MANAGE_USERS, async (req) => {
+ access(PERMISSIONS.MANAGE_PROFILE, async (req) => {
     return await User.findById(req.params.userId);
   }),
   updateUser
