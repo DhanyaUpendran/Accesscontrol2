@@ -1,18 +1,17 @@
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 export const hashPassword = async (password) => {
-  const salt = await bcrypt.genSalt(10);
-  return await bcrypt.hash(password, salt);
+  return bcrypt.hash(password, 10);
 };
 
-export const comparePassword = async (password, hashed) => {
-  return await bcrypt.compare(password, hashed);
+export const comparePassword = async (password, hash) => {
+  return bcrypt.compare(password, hash);
 };
 
 export const generateToken = (user) => {
   return jwt.sign(
-    { userId: user._id, isAdmin: user.isAdmin },
+    { id: user._id },
     process.env.JWT_SECRET,
     { expiresIn: "1d" }
   );

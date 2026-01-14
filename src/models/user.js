@@ -1,29 +1,21 @@
 import mongoose from "mongoose";
 
-const roleAssignmentSchema = new mongoose.Schema({
-  roleId: { type: mongoose.Schema.Types.ObjectId, ref: "Role" },
-  startsAt: { type: Date, default: Date.now },
-  endsAt: { type: Date, default: null }
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  passwordHash: { type: String, required: true },
+  roles: [
+    {
+      roleId: { type: mongoose.Schema.Types.ObjectId, ref: "Role", required: true },
+      startsAt: { type: Date, default: Date.now },
+      endsAt: { type: Date, default: null },
+    },
+  ],
+  team: { type: mongoose.Schema.Types.ObjectId, ref: "Team", default: null },
+  isActive: { type: Boolean, default: true },
+  isAdmin: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
-
-const permissionAssignmentSchema = new mongoose.Schema({
-  permissionKey: String,
-  scope: String,
-  startsAt: { type: Date, default: Date.now },
-  endsAt: { type: Date, default: null }
-});
-
-const userSchema = new mongoose.Schema(
-  {
-    name: String,
-    email: { type: String, unique: true },
-    passwordHash: String,
-    roles: [roleAssignmentSchema],
-    directPermissions: [permissionAssignmentSchema],
-    team: { type: mongoose.Schema.Types.ObjectId, ref: "Team", default: null },
-    isActive: { type: Boolean, default: true }
-  },
-  { timestamps: true }
-);
 
 export default mongoose.model("User", userSchema);

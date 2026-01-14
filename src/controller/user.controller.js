@@ -1,91 +1,53 @@
 import User from "../models/user.js";
+import { getActivePermissions } from "../utils/permission.js";
 
-/**
- * GET USERS (scope aware)
- */
-export const getUsers = async (req, res) => {
-  try {
-    const scope = req.scope;
-    const user = req.user;
 
-    let query = {};
-
-    if (scope === "self") {
-      query._id = user._id;
-    } else if (scope === "team") {
-      query.team = user.team;
-    }
-    // global → no filter
-
-    const users = await User.find(query)
-      .select("-passwordHash")
-      .populate("team", "name");
-
-    res.json(users);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch users" });
-  }
-};
-
-/**
- * GET CURRENT USER PROFILE
- */
+/** View own profile */
 export const getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id)
-      .select("-passwordHash")
-      .populate("team", "name");
-
-    res.json(user);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch profile" });
-  }
+  
+  res.json({
+    _id: req.user._id,
+    name: req.user.name,
+    email: req.user.email,
+    team: req.user.team,
+    
+    permissions: getActivePermissions(req.user)
+  });
 };
 
-/**
- * UPDATE USER (name / email)
- */
+/** View users (scope aware) */
+export const getUsers = async (req, res) => {
+  const { scope } = req;
+  const user = req.user;
+
+  let query = {};
+  if (scope === "self") query._id = user._id;
+  if (scope === "team") query.team = user.team;
+
+  const users = await User.find(query)
+    .select("-passwordHash")
+    .populate("team", "name");
+
+  res.json(users);
+};
+
+/** Update user */
 export const updateUser = async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    const targetUser = req.targetUser;
+  const { name, email } = req.body;
+  const targetUser = req.targetUser;
 
-    const permission = req.user.permissions.find(
-      (p) => p.key === "UPDATE_PROFILE"
-    );
+  if (name) targetUser.name = name;
+  if (email) targetUser.email = email;
 
-    const now = new Date();
-    if (!permission || (permission.endsAt && permission.endsAt < now)) {
-      return res.status(403).json({ message: "Permission expired or denied" });
-    }
-
-    if (name) targetUser.name = name;
-    if (email) targetUser.email = email;
-
-    await targetUser.save();
-
-    res.json({ message: "User updated successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to update user" });
-  }
+  await targetUser.save();
+  res.json({ message: "User updated" });
 };
 
-/**
- * REMOVE USER FROM TEAM (NOT DELETE USER)
- */
+/** Remove user from team */
 export const removeUserFromTeam = async (req, res) => {
-  try {
-    const targetUser = req.targetUser;
+  const targetUser = req.targetUser;
+  targetUser.team = null;
+  await targetUser.save();
 
-    targetUser.team = null;
-    await targetUser.save();
-
-    res.json({ message: "User removed from team" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to remove user from team" });
-  }
+  res.json({ message: "User removed from team" });
 };

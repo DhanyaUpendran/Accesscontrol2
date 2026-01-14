@@ -1,79 +1,104 @@
 import express from "express";
+import { PERMISSIONS } from "../utils/constants.js";
 import auth from "../middleware/auth.js";
-import checkAccess from "../middleware/checkAccess.js";
-import { PERMISSIONS } from "../utils/permission.js";
-
-import express from "express";
+import {access} from "../middleware/checkAccess.js"
 import {
-  createUser,
   createRole,
   assignPermissionsToRole,
   assignRoleToUser,
   createTeam,
   assignUserToTeam,
   getAuditLogs,
+  createUser,
+  
 } from "../controller/admin.controller.js";
-
+import Role from "../models/role.js";
+import Team from "../models/team.js";
+import User from "../models/user.js";
 
 const router = express.Router();
 
-// ------------------ ROLES ------------------
-// Create a role
-router.post(
-  "/roles",
+router.get(
+  "/users",
   auth,
-  checkAccess(PERMISSIONS.MANAGE_USERS),
-  createRole
+  access(PERMISSIONS.MANAGE_USERS), // admin permission
+  async (req, res) => {
+    const users = await User.find().populate("team");
+    res.json(users);
+  }
 );
 
-// Assign permissions to a role
-router.put(
-  "/roles/:roleId/permissions",
-  auth,
-  checkAccess(PERMISSIONS.MANAGE_USERS),
-  assignPermissionsToRole
-);
 
-// ------------------ USERS ------------------
-// Create a new user (with roles, permissions, team, time-based assignments)
+
 router.post(
   "/users",
   auth,
-  checkAccess(PERMISSIONS.MANAGE_USERS),
+  access(PERMISSIONS.MANAGE_USERS),
   createUser
 );
 
-// Assign role to an existing user (supports startsAt/endsAt)
+// Role management
 router.post(
-  "/users/assign-role",
+  "/roles",
   auth,
-  checkAccess(PERMISSIONS.MANAGE_USERS),
+  access(PERMISSIONS.MANAGE_ROLES),
+  createRole
+);
+
+router.get(
+  "/roles",
+  auth,
+  access(PERMISSIONS.MANAGE_ROLES),
+  async (req, res) => {
+    const roles = await Role.find();
+    res.json(roles);
+  }
+);
+
+router.put(
+  "/roles/:roleId/permissions",
+  auth,
+  access(PERMISSIONS.MANAGE_ROLES),
+  assignPermissionsToRole
+);
+
+router.post(
+  "/roles/assign",
+  auth,
+  access(PERMISSIONS.MANAGE_ROLES),
   assignRoleToUser
 );
 
-// ------------------ TEAMS ------------------
-// Create a new team
+// Team management
 router.post(
-  "/teams",
+  "/teams/create",
   auth,
-  checkAccess(PERMISSIONS.MANAGE_USERS),
+  access(PERMISSIONS.MANAGE_TEAMS),
   createTeam
 );
 
-// Assign a user to a team
-router.post(
-  "/teams/assign-user",
+router.get(
+  "/teams",
   auth,
-  checkAccess(PERMISSIONS.MANAGE_USERS),
+  access(PERMISSIONS.MANAGE_TEAMS),
+  async (req, res) => {
+    const teams = await Team.find();
+    res.json(teams);
+  }
+);
+
+router.post(
+  "/teams/assign",
+  auth,
+  access(PERMISSIONS.MANAGE_TEAMS),
   assignUserToTeam
 );
 
-// ------------------ AUDIT LOGS ------------------
-// View audit logs (admin only)
+// Audit logs
 router.get(
   "/audit-logs",
   auth,
-  checkAccess(PERMISSIONS.VIEW_AUDIT_LOGS),
+  access(PERMISSIONS.VIEW_AUDIT_LOGS),
   getAuditLogs
 );
 

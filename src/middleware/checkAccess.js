@@ -1,41 +1,58 @@
-import { hasPermission, enforceScope } from "../utils/access.util.js";
-
-const checkAccess = (permissionKey, getTargetUser) => {
+import { hasPermission, enforceScope } from "../utils/permission.js";
+import { getUserPermissions } from "../utils/getUserPermissions.js";
+/**
+ * Usage:
+ * access("manage_users")
+ * access("edit_user", getTargetUser)
+ */
+export const access = (permissionKey, getTargetUser) => {
   return async (req, res, next) => {
-    console.log("🛂 checkAccess called for:", permissionKey);
+    console.log("---- ACCESS CHECK ----");
+    console.log("Required:", permissionKey);
+    console.log("User permissions:", getUserPermissions(req.user));
+    const user = req.user;
 
-    const permission = await hasPermission(req.user, permissionKey);
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-    // Permission not found or expired
-    if (!permission) {
-      console.log("🚫 ACCESS DENIED: Permission missing or expired");
+    // 1️⃣ Permission existence
+    const perm = hasPermission(user, permissionKey);
+    if (!perm) {
       return res.status(403).json({ message: "Permission denied" });
     }
 
     const now = new Date();
-    if (permission.startsAt && permission.startsAt > now) {
-      console.log("🚫 ACCESS DENIED: Permission not started yet");
+
+    // 2️⃣ Time-based checks ✅
+    if (perm.startsAt && perm.startsAt > now) {
       return res.status(403).json({ message: "Permission not active yet" });
     }
-    if (permission.endsAt && permission.endsAt < now) {
-      console.log("🚫 ACCESS DENIED: Permission expired");
+
+    if (perm.endsAt && perm.endsAt < now) {
       return res.status(403).json({ message: "Permission expired" });
     }
 
-    req.scope = permission.scope;
-
+    // 3️⃣ Load target resource (if any)
+    let target = null;
     if (getTargetUser) {
-      const targetUser = await getTargetUser(req);
+      target = await getTargetUser(req);
+      if (!target) {
+        return res.status(404).json({ message: "Target not found" });
+      }
 
-      if (!enforceScope(permission.scope, req.user, targetUser)) {
+      // 4️⃣ Scope enforcement
+      const allowed = enforceScope(perm.scope, user, target);
+      if (!allowed) {
         return res.status(403).json({ message: "Scope restriction" });
       }
 
-      req.targetUser = targetUser;
+      req.targetUser = target;
     }
+
+    // 5️⃣ Attach resolved permission
+    req.permission = perm;
 
     next();
   };
 };
-
-export default checkAccess;
