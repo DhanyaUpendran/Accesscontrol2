@@ -13,9 +13,16 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true })
-
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", 
+      "https://accesscontrol2-frontend-1kdvvqp7a-dhanyas-projects-bbe37b38.vercel.app"
+    ],
+    credentials: true,
+  })
 );
+
 app.use(express.json());
 
 // API Routes
