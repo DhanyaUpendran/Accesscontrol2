@@ -13,12 +13,12 @@ import adminRoutes from "./routes/admin.routes.js";
 
 
 
-const isDev = process.env.NODE_ENV === "development";
+// const isDev = process.env.NODE_ENV === "development";
 const app = express();
-const allowedOrigins = isDev
-  ? ["http://localhost:5173"]
-  : ["https://accesscontrol2-frontend.vercel.app"];
-
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://accesscontrol2-frontend.vercel.app",
+];
 app.use(
   cors({
     origin: (origin, callback) => {
