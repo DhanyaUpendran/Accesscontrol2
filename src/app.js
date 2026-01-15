@@ -19,22 +19,30 @@ const allowedOrigins = [
   "http://localhost:5173",
   "https://accesscontrol2-frontend.vercel.app",
 ];
+
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // allow requests with no origin (Postman or server-to-server requests)
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
       if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-
-      console.log("Blocked CORS request from:", origin);
-      callback(new Error(`CORS not allowed for origin ${origin}`));
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        console.log("Blocked origin:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
     },
-    credentials: false, // allow cookies/auth headers
+    credentials: false,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+    allowedHeaders: ["Content-Type", "Authorization"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   })
 );
+
+// Handle preflight requests explicitly
+app.options("*", cors());
 app.use(express.json());
 
 // API Routes
