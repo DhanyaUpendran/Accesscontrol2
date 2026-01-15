@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
+
 dotenv.config();
 connectDB();
 
@@ -10,11 +11,9 @@ import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 
-
-
-
-// const isDev = process.env.NODE_ENV === "development";
 const app = express();
+
+// CORS Configuration - MUST be before routes
 const allowedOrigins = [
   "http://localhost:5173",
   "https://accesscontrol2-frontend.vercel.app",
@@ -23,14 +22,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, Postman, etc.)
+      console.log("Incoming request from origin:", origin); // Debug log
+      
+      // Allow requests with no origin (Postman, server-to-server)
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.indexOf(origin) !== -1) {
+      if (allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        console.log("Blocked origin:", origin);
-        callback(new Error("Not allowed by CORS"));
+        console.log("❌ Blocked origin:", origin);
+        callback(new Error(`CORS not allowed for origin: ${origin}`));
       }
     },
     credentials: false,
@@ -41,8 +42,9 @@ app.use(
   })
 );
 
-// Handle preflight requests explicitly
+// Handle preflight
 app.options("*", cors());
+
 app.use(express.json());
 
 // API Routes
@@ -51,5 +53,9 @@ app.use("/api/user", userRoutes);
 app.use("/api/admin", adminRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log("Allowed origins:", allowedOrigins);
+});
+
 export default app;
