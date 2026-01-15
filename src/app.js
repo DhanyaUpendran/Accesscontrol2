@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
 
-const allowedOrigins = [
-  "http://localhost:5173", // dev
-  "https://accesscontrol2-frontend.vercel.app", // your production frontend
-  
-];
+const isDev = process.env.NODE_ENV === "development";
+
+const allowedOrigins = isDev
+  ? ["http://localhost:5173"]
+  : ["https://accesscontrol2-frontend.vercel.app"];
 
 app.use(
   cors({
