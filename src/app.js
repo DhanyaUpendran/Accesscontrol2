@@ -14,23 +14,21 @@ connectDB();
 const app = express();
 const allowedOrigins = [
   "http://localhost:5173", // dev
-  "https://accesscontrol2-frontend-1kdvvqp7a-dhanyas-projects-bbe37b38.vercel.app", // prod
   "https://accesscontrol2-frontend.vercel.app" // if your Vercel URL changed
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (like Postman)
-      if (!origin) return callback(null, true);
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow non-browser requests
+      if (allowedOrigins.includes(origin)) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS not allowed for this origin"));
-      }
+      console.log("Blocked CORS request from:", origin); // helpful debug
+      callback(new Error(`CORS not allowed for origin ${origin}`));
     },
-    credentials: true, // allows cookies/auth headers
+    credentials: true, // allow cookies/auth headers
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // explicitly allow methods
+    allowedHeaders: ["Content-Type", "Authorization"], // allow common headers
   })
 );
 app.use(express.json());
