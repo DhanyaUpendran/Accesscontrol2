@@ -30,7 +30,7 @@ app.use(
       console.log("Blocked CORS request from:", origin);
       callback(new Error(`CORS not allowed for origin ${origin}`));
     },
-    credentials: true, // allow cookies/auth headers
+    credentials: false, // allow cookies/auth headers
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"]
   })
